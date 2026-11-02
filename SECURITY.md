@@ -38,4 +38,4 @@ With **Share clipboard** on (the default), the host sends the current clipboard 
 - **Anyone who controls a paired Mac controls the other.** Pair only Macs you trust, and select **Forget** for a Mac you sell or give away.
 - **The guest listens on every network interface,** including VPNs such as Tailscale, so it can be reached by address. Unpaired connections still need confirmation on both screens, but the port is visible to anyone on those networks.
 - **Secure Input is respected.** When a password field or a secure terminal has Secure Input on, macOS hides keystrokes from Seamline, and typing stays on the host. Seamline shows which app holds it.
-- **Release builds are ad-hoc signed and not notarized.** Check the SHA-256 on the release page, or build from source.
+- **Release builds are signed with a Developer ID (team 5583X832TP) and notarized by Apple.** Run `codesign -dv` on the app to see the team, and check the SHA-256 on the release page.

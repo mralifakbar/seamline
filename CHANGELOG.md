@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-03
+
+### Changed
+
+- Releases are signed with a Developer ID and notarized by Apple, so macOS opens Seamline without a warning, and updates keep the Accessibility and Input Monitoring permissions. Coming from 0.1.0, which was signed ad-hoc, switch Seamline off and on again in both lists once.
+- `scripts/notarize.sh` notarizes and staples a signed build.
+- `scripts/build-app.sh` stops with an error when the identity in `SEAMLINE_SIGN_IDENTITY` cannot sign, instead of falling back to ad-hoc.
+
 ## [0.1.0] - 2026-11-02
 
 First public release.
@@ -29,5 +37,6 @@ First public release.
 - The host explains where to look when no Mac shows up, because macOS can block Local Network access without an error.
 - The keyboard focus ring on the arrangement tiles hugs the tile instead of floating between Macs.
 
-[Unreleased]: https://github.com/mralifakbar/seamline/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/mralifakbar/seamline/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/mralifakbar/seamline/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mralifakbar/seamline/releases/tag/v0.1.0

@@ -417,3 +417,17 @@ private final class Collector: PeerConnectionDelegate, @unchecked Sendable {
 
     func peerConnection(_ connection: PeerConnection, didCloseWith error: Error?) {}
 }
+
+final class DiscoveryTests: XCTestCase {
+    /// Regression: a Mac seen first over peer-to-peer Wi-Fi (rank 4) crashed the browser by unwrapping an endpoint it never had.
+    func testFirstSightingOverPeerToPeerTakesTheNewEndpoint() {
+        XCTAssertFalse(PeerBrowser.keepsExisting(newRank: 4, existingRank: nil))
+        XCTAssertFalse(PeerBrowser.keepsExisting(newRank: 0, existingRank: nil))
+    }
+
+    func testFasterInterfaceWins() {
+        XCTAssertTrue(PeerBrowser.keepsExisting(newRank: 4, existingRank: 1), "Wi-Fi beats peer-to-peer")
+        XCTAssertFalse(PeerBrowser.keepsExisting(newRank: 0, existingRank: 1), "Ethernet beats Wi-Fi")
+        XCTAssertFalse(PeerBrowser.keepsExisting(newRank: 1, existingRank: 1), "a tie takes the newest result")
+    }
+}

@@ -31,27 +31,50 @@ enum Snapshot {
         guard let dir = env["SEAMLINE_SNAPSHOT_DIR"], let scenario = env["SEAMLINE_SCENARIO"] else { return }
         NSApp.appearance = NSAppearance(named: env["SEAMLINE_DARK"] == "1" ? .darkAqua : .aqua)
         apply(scenario, to: model)
+        NSApp.activate(ignoringOtherApps: true)
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
             let suffix = env["SEAMLINE_DARK"] == "1" ? "-dark" : ""
+            // No keyboard focus ring in screenshots.
+            for window in NSApp.windows { window.makeFirstResponder(nil) }
             for window in NSApp.windows where window.isVisible && window.frame.width > 200 {
                 guard let view = window.contentView?.superview ?? window.contentView else { continue }
                 let name = window.sheetParent != nil ? "sheet" : (window.title.isEmpty ? "window" : window.title)
-                write(view, to: "\(dir)/\(scenario)\(suffix)-\(name).png")
+                let path = "\(dir)/\(scenario)\(suffix)-\(name).png"
+                // A real window capture keeps the active-window look (blue switches, vibrancy); an offscreen
+                // render draws controls as inactive. Fall back to it when Screen Recording is not allowed.
+                if window.sheetParent != nil || !capture(window, to: path) { write(view, to: path) }
             }
             let menu = NSHostingView(rootView: MenuBarView().environmentObject(model).background(Color(nsColor: .windowBackgroundColor)))
             menu.frame = NSRect(origin: .zero, size: menu.fittingSize)
             let panel = NSWindow(contentRect: menu.frame, styleMask: [.borderless], backing: .buffered, defer: false)
             panel.contentView = menu
             menu.layoutSubtreeIfNeeded()
-            write(menu, to: "\(dir)/\(scenario)\(suffix)-menubar.png")
             let settings = NSHostingView(rootView: SettingsView().environmentObject(model).background(Color(nsColor: .windowBackgroundColor)))
             settings.frame = NSRect(origin: .zero, size: settings.fittingSize)
             let settingsWindow = NSWindow(contentRect: settings.frame, styleMask: [.titled], backing: .buffered, defer: false)
             settingsWindow.contentView = settings
             settings.layoutSubtreeIfNeeded()
-            write(settings, to: "\(dir)/\(scenario)\(suffix)-settings.png")
-            exit(0)
+            // Put both on screen briefly so they can be captured as real windows.
+            let extra: [(NSWindow, NSView, String)] = [(panel, menu, "menubar"), (settingsWindow, settings, "settings")]
+            for (window, _, _) in extra { window.center(); window.orderFrontRegardless() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                for (window, view, name) in extra {
+                    let path = "\(dir)/\(scenario)\(suffix)-\(name).png"
+                    if !capture(window, to: path) { write(view, to: path) }
+                }
+                exit(0)
+            }
         }
+    }
+
+    private static func capture(_ window: NSWindow, to path: String) -> Bool {
+        guard CGPreflightScreenCaptureAccess() else { return false }
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        task.arguments = ["-x", "-o", "-l", String(window.windowNumber), path]
+        guard (try? task.run()) != nil else { return false }
+        task.waitUntilExit()
+        return task.terminationStatus == 0 && FileManager.default.fileExists(atPath: path)
     }
 
     private static func write(_ view: NSView, to path: String) {

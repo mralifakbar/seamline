@@ -123,6 +123,10 @@ final class AppModel: ObservableObject {
         if let data = defaults.data(forKey: "layout"), let saved = try? JSONDecoder().decode(Layout.self, from: data) {
             layout = saved
         }
+        #if DEBUG
+        // A snapshot run shows sample state only: no real discovery, event tap or network traffic.
+        previewing = ProcessInfo.processInfo.environment["SEAMLINE_SCENARIO"] != nil
+        #endif
         CursorControl.prepare()
         applyDockPolicy()
         observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in

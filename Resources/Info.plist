@@ -8,6 +8,8 @@
 	<string>Seamline</string>
 	<key>CFBundleExecutable</key>
 	<string>Seamline</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>dev.seamline.Seamline</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -24,13 +26,13 @@
 	<string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
-	<key>NSHighResolutionCapable</key>
-	<true/>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Seamline finds your other Macs on this network so one keyboard and mouse can control them.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_seamline._tcp</string>
 	</array>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Seamline finds your other Macs on this network so one keyboard and mouse can control them.</string>
 </dict>
 </plist>

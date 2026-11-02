@@ -567,6 +567,13 @@ public final class PeerBrowser: @unchecked Sendable {
         }
     }
 
+    /// Whether an endpoint already chosen for a Mac beats a newly seen one. A Mac seen first over
+    /// peer-to-peer Wi-Fi has nothing to keep yet, so the new endpoint always wins then.
+    static func keepsExisting(newRank: Int, existingRank: Int?) -> Bool {
+        guard let existingRank else { return false }
+        return existingRank < newRank
+    }
+
     public func start() {
         browser.browseResultsChangedHandler = { [weak self] results, _ in
             guard let self else { return }
@@ -582,7 +589,9 @@ public final class PeerBrowser: @unchecked Sendable {
                 var interfaces = (seen[id] ?? []) + result.interfaces
                 interfaces.sort { Self.rank($0) < Self.rank($1) }
                 seen[id] = interfaces
-                let endpoint = Self.rank(result.interfaces.first) <= Self.rank(peers[id]?.interface) ? result.endpoint : peers[id]!.endpoint
+                let existing = peers[id]
+                let keep = Self.keepsExisting(newRank: Self.rank(result.interfaces.first), existingRank: existing.map { Self.rank($0.interface) })
+                let endpoint = keep ? existing!.endpoint : result.endpoint
                 peers[id] = DiscoveredPeer(id: id, name: name, kind: kind, endpoint: endpoint, interfaces: interfaces)
             }
             self.onChange?(peers.values.sorted { $0.name < $1.name })

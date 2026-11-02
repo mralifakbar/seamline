@@ -194,6 +194,21 @@ private struct ArrangementCanvas: View {
 
         return MachineTile(machine: machine, isThisMac: machine.id == model.identity.id, hasPointer: hasPointer && !model.paused, lifted: isDragging && !reduceMotion)
             .frame(width: size.width, height: size.height)
+            // Before .position, which grows the view to the whole canvas: the focus ring must hug the tile.
+            .focusable()
+            .onMoveCommand { direction in
+                let edge: Edge
+                switch direction {
+                case .left: edge = .left
+                case .right: edge = .right
+                case .up: edge = .top
+                case .down: edge = .bottom
+                @unknown default: return
+                }
+                let target = cell.step(edge)
+                guard model.layout.dropTargets(for: key).contains(target) else { NSSound.beep(); return }
+                withAnimation(settle(flicked: false)) { model.move(machine.id, to: target) }
+            }
             .position(geometry.center(of: cell))
             .offset(isDragging ? drag!.offset : .zero)
             .zIndex(isDragging ? 1 : 0)
@@ -216,20 +231,6 @@ private struct ArrangementCanvas: View {
                         }
                     }
             )
-            .focusable()
-            .onMoveCommand { direction in
-                let edge: Edge
-                switch direction {
-                case .left: edge = .left
-                case .right: edge = .right
-                case .up: edge = .top
-                case .down: edge = .bottom
-                @unknown default: return
-                }
-                let target = cell.step(edge)
-                guard model.layout.dropTargets(for: key).contains(target) else { NSSound.beep(); return }
-                withAnimation(settle(flicked: false)) { model.move(machine.id, to: target) }
-            }
             .contextMenu {
                 if machine.id != model.identity.id {
                     Button("Forget \(machine.name)", role: .destructive) { model.forget(machine.id) }
@@ -296,6 +297,7 @@ private func + (point: CGPoint, size: CGSize) -> CGPoint {
 private struct NearbyList: View {
     @EnvironmentObject private var model: AppModel
     @State private var addressSheet = false
+    @State private var searchingLong = false
 
     private var nearby: [Machine] {
         model.machines.filter { !$0.isPaired }
@@ -316,11 +318,31 @@ private struct NearbyList: View {
                 Label("Can't search the network right now: \(reason)", systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.subdued)
             } else if nearby.isEmpty {
-                HStack(spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
                     ProgressView().controlSize(.small)
-                    Text("Looking for Macs on this network. On the other Mac, open Seamline and choose “Another Mac”.")
-                        .foregroundStyle(.subdued)
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(model.machines.isEmpty
+                             ? "Looking for Macs on this network. On the other Mac, open Seamline and choose “Another Mac”."
+                             : "Looking for more Macs. On another Mac, open Seamline and choose “Another Mac”.")
+                            .foregroundStyle(.subdued)
+                            .fixedSize(horizontal: false, vertical: true)
+                        // macOS can block Bonjour without reporting an error, so after a while say where to look.
+                        // Once any Mac has shown up, discovery evidently works and the hint would mislead.
+                        if searchingLong, model.machines.isEmpty {
+                            HStack(spacing: 6) {
+                                Text("Still nothing? Local Network access may be off for Seamline.")
+                                    .foregroundStyle(.subdued)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Button("Open Privacy Settings", action: Permissions.openLocalNetworkSettings)
+                                    .buttonStyle(.link)
+                            }
+                        }
+                    }
+                }
+                .task {
+                    searchingLong = false
+                    try? await Task.sleep(nanoseconds: 10_000_000_000)
+                    searchingLong = true
                 }
             } else {
                 ForEach(nearby) { machine in

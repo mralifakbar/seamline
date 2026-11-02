@@ -3,13 +3,18 @@ import ApplicationServices
 import Carbon
 import CoreGraphics
 import IOKit
+import IOKit.hid
 import IOKit.ps
 import ServiceManagement
 import SeamlineCore
 
 enum SystemInfo {
     static var computerName: String {
-        Host.current().localizedName ?? "Mac"
+        #if DEBUG
+        // Snapshots for the README use a sample name instead of this Mac's real one.
+        if let name = ProcessInfo.processInfo.environment["SEAMLINE_NAME"] { return name }
+        #endif
+        return Host.current().localizedName ?? "Mac"
     }
 
     /// Active displays in global points. Mirrored displays share bounds, so duplicates collapse.
@@ -85,7 +90,10 @@ enum Permissions {
     }
 
     static func requestInputMonitoring() {
-        if !CGRequestListenEventAccess() { open("Privacy_ListenEvent") }
+        // IOHIDRequestAccess is what adds the app to the Input Monitoring list. Without it, a fresh
+        // install (or one whose entry was reset) is missing from the list and there is nothing to switch on.
+        let granted = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent) || CGRequestListenEventAccess()
+        if !granted { open("Privacy_ListenEvent") }
     }
 
     static func openLocalNetworkSettings() { open("Privacy_LocalNetwork") }

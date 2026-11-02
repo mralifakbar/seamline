@@ -25,11 +25,17 @@ VERSION="${VERSION:-$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' 
 VERSION="${VERSION:-0.1.0}"
 BUILD_NUMBER="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 
-swift build -c release --arch arm64 --arch x86_64
+# One build per architecture, joined with lipo. `swift build --arch arm64 --arch x86_64` goes through
+# Xcode's build system, which fails with "duplicate output file" on some Xcode 16 releases.
+BINARIES=()
+for arch in arm64 x86_64; do
+  swift build -c release --triple "$arch-apple-macosx13.0"
+  BINARIES+=("$(swift build -c release --triple "$arch-apple-macosx13.0" --show-bin-path)/Seamline")
+done
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$ROOT/.build/apple/Products/Release/Seamline" "$APP/Contents/MacOS/Seamline"
+lipo -create "${BINARIES[@]}" -output "$APP/Contents/MacOS/Seamline"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 # The icon is drawn by scripts/make-icon.swift and cached in build/ until that script changes.
 ICNS="$ROOT/build/AppIcon.icns"

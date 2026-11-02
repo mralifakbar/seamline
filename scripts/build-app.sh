@@ -69,7 +69,14 @@ if [[ -z "$IDENTITY" ]]; then
   IDENTITY="-"
 fi
 
-if ! codesign --force --options runtime --timestamp=none --sign "$IDENTITY" "$APP" 2>/dev/null; then
+# Notarization needs a secure timestamp. Local builds skip it so they work offline.
+TIMESTAMP=--timestamp=none
+[[ $IDENTITY == "Developer ID Application"* ]] && TIMESTAMP=--timestamp
+
+if [[ -n "${SEAMLINE_SIGN_IDENTITY:-}" ]]; then
+  # An identity asked for by name must not quietly turn into an ad-hoc build.
+  codesign --force --options runtime $TIMESTAMP --sign "$IDENTITY" "$APP"
+elif ! codesign --force --options runtime $TIMESTAMP --sign "$IDENTITY" "$APP" 2>/dev/null; then
   echo "Signing with \"$IDENTITY\" failed (is the login keychain locked?). Falling back to ad-hoc."
   IDENTITY="-"
   codesign --force --options runtime --sign - "$APP"

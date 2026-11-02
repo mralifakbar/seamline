@@ -31,18 +31,11 @@ One keyboard and mouse for every Mac on your desk. Push the pointer past the edg
 ### Download
 
 1. Download the latest **Seamline-x.y.z.zip** from [Releases](https://github.com/mralifakbar/seamline/releases), unzip it, and move **Seamline.app** to Applications. Do this on every Mac you want to use. The app runs on both Apple silicon and Intel Macs.
-2. Open Seamline. The first time, macOS blocks it with a message that Apple could not verify the app, because it is not notarized. Go to **System Settings › Privacy & Security**, scroll down, and click **Open Anyway** next to the Seamline message. On macOS 15 and later, right-click › Open no longer skips this step.
-
-   Or, in Terminal, once:
-
-   ```sh
-   xattr -dr com.apple.quarantine /Applications/Seamline.app
-   ```
-
+2. Open Seamline. Releases are signed with a Developer ID and notarized by Apple, so macOS opens it without a warning.
 3. Continue with [Set up](#set-up).
 
 > [!NOTE]
-> Release builds are signed ad-hoc. macOS ties the Accessibility and Input Monitoring permissions to the app's signature, so **after updating to a new version, switch Seamline off and on again** in both lists. Check the SHA-256 on the release page if you want to be sure the zip is the one GitHub Actions built.
+> macOS ties the Accessibility and Input Monitoring permissions to the app's signature. Releases from 0.1.1 on share one signature, so updates keep them. **Coming from 0.1.0**, which was signed ad-hoc, switch Seamline off and on again in both lists once. Check the SHA-256 on the release page if you want to be sure the zip is the one GitHub Actions built.
 
 ### Build from source
 

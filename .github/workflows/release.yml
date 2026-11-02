@@ -7,6 +7,9 @@ on:
 permissions:
   contents: write
 
+env:
+  SIGN_IDENTITY: "Developer ID Application: Alif Akbar Kartadinata (5583X832TP)"
+
 jobs:
   release:
     runs-on: macos-15
@@ -18,12 +21,41 @@ jobs:
       - name: Test
         run: swift test
 
-      - name: Build universal app
-        run: VERSION="${GITHUB_REF_NAME#v}" ./scripts/build-app.sh --zip
+      - name: Import signing certificate
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(uuidgen)"
+          printf '%s' "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/cert.p12"
+          security find-identity -v -p codesigning "$keychain"
 
-      - name: Checksum
+      - name: Build universal app
+        run: VERSION="${GITHUB_REF_NAME#v}" SEAMLINE_SIGN_IDENTITY="$SIGN_IDENTITY" ./scripts/build-app.sh
+
+      - name: Notarize
+        env:
+          NOTARY_KEY: ${{ secrets.NOTARY_KEY }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          export NOTARY_KEY_PATH="$RUNNER_TEMP/notary.p8"
+          printf '%s' "$NOTARY_KEY" | base64 --decode > "$NOTARY_KEY_PATH"
+          scripts/notarize.sh build/Seamline.app
+
+      - name: Package and checksum
         working-directory: build
-        run: shasum -a 256 Seamline-*.zip | tee SHA256SUMS.txt
+        run: |
+          ditto -c -k --keepParent Seamline.app "Seamline-${GITHUB_REF_NAME#v}.zip"
+          shasum -a 256 Seamline-*.zip | tee SHA256SUMS.txt
 
       - name: Release notes from CHANGELOG.md
         run: |
@@ -34,11 +66,8 @@ jobs:
             echo "### Install"
             echo
             echo "1. Download **Seamline-${version}.zip**, unzip it, and move **Seamline.app** to Applications. Do this on every Mac."
-            echo "2. Open it. macOS blocks it the first time because the app is not notarized. Go to **System Settings › Privacy & Security**, scroll down, and click **Open Anyway** next to the Seamline message."
-            echo "   Or run \`xattr -dr com.apple.quarantine /Applications/Seamline.app\` once."
+            echo "2. Open it. The app is signed with a Developer ID and notarized by Apple, so macOS opens it without a warning."
             echo "3. Follow the setup in the [README](https://github.com/mralifakbar/seamline#set-up)."
-            echo
-            echo "This build is signed ad-hoc, so after updating to a new version, switch Seamline off and on again under Accessibility and Input Monitoring."
             echo
             echo "SHA-256:"
             echo '```'
@@ -53,3 +82,7 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" build/Seamline-*.zip build/SHA256SUMS.txt \
             --title "Seamline ${GITHUB_REF_NAME#v}" --notes-file notes.md --verify-tag
+
+      - name: Remove signing keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true

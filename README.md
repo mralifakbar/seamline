@@ -1,69 +1,84 @@
-<p align="center"><img src="docs/images/icon.png" width="128" height="128" alt="Seamline icon: a desktop display and a laptop joined by a glowing line that ends in a pointer."></p>
+<div align="center">
 
-<h1 align="center">Seamline</h1>
+<img src="docs/images/icon.png" width="96" alt="Seamline icon">
 
-One keyboard and mouse for every Mac on your desk. Push the pointer past the edge of one screen and it shows up on the next Mac. Whatever you copied comes along.
+# Seamline
+
+**One keyboard and mouse for every Mac on your desk.**
+
+A native macOS app that sends your pointer, keystrokes and clipboard to the next Mac
+when you push past the edge of the screen. No server, no account, no telemetry.
+
+[![CI](https://github.com/mralifakbar/seamline/actions/workflows/ci.yml/badge.svg)](https://github.com/mralifakbar/seamline/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/mralifakbar/seamline?sort=semver)](https://github.com/mralifakbar/seamline/releases/latest)
+![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)
+![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/5-pointer-away-dark.png">
   <img src="docs/images/5-pointer-away.png" width="600" alt="Seamline's main window: Mac Studio sits next to a MacBook Air, which is highlighted because the pointer is on it. A banner says typing stays on this Mac while 1Password protects a password field.">
 </picture>
 
-- **Native.** Swift and SwiftUI, one universal app for Apple silicon and Intel, macOS 13 Ventura or later.
-- **No setup server, no IP addresses.** Macs find each other over Bonjour. Tailscale and other VPNs work too.
-- **Encrypted and paired.** Two Macs are linked only after you compare a 6-digit code on both screens.
-- **Fast.** About 6 ms round trip over Wi-Fi between a Mac mini and a MacBook Pro (see [Measured](#measured)).
+</div>
+
+## Features
+
+- **Native.** Swift and SwiftUI, one universal app for Apple silicon and Intel, macOS
+  13 Ventura or later.
+- **No setup server, no IP addresses.** Macs find each other over Bonjour. Tailscale
+  and other VPNs work too.
+- **Encrypted and paired.** Two Macs are linked only after you compare a 6-digit code
+  on both screens.
+- **Fast.** About 6 ms round trip over Wi-Fi between a Mac mini and a MacBook Pro
+  (see [Measured](#measured)).
 - **Clipboard follows the pointer.** Text, rich text, images, PDFs and links.
-
-## Contents
-
-- [Install](#install)
-- [Set up](#set-up)
-- [Daily use](#daily-use)
-- [Troubleshooting](#troubleshooting)
-- [How it works](#how-it-works)
-- [Measured](#measured)
-- [Development](#development)
-- [Known limits](#known-limits)
 
 ## Install
 
 ### Download
 
-1. Download the latest **Seamline-x.y.z.zip** from [Releases](https://github.com/mralifakbar/seamline/releases), unzip it, and move **Seamline.app** to Applications. Do this on every Mac you want to use. The app runs on both Apple silicon and Intel Macs.
-2. Open Seamline. Releases are signed with a Developer ID and notarized by Apple, so macOS opens it without a warning.
+1. Grab `Seamline-x.y.z.zip` from the [latest release](https://github.com/mralifakbar/seamline/releases/latest).
+2. Unzip it, move **Seamline.app** to `/Applications` and open it. Do this on every
+   Mac you want to use.
 3. Continue with [Set up](#set-up).
 
-> [!NOTE]
-> macOS ties the Accessibility and Input Monitoring permissions to the app's signature. Releases from 0.1.1 on share one signature, so updates keep them. **Coming from 0.1.0**, which was signed ad-hoc, switch Seamline off and on again in both lists once. Check the SHA-256 on the release page if you want to be sure the zip is the one GitHub Actions built.
+Releases are signed with a Developer ID and notarized by Apple, so macOS opens them
+without a warning. macOS ties the Accessibility and Input Monitoring permissions to
+that signature, so updates keep them. Coming from 0.1.0, which was signed ad-hoc,
+switch Seamline off and on again in both lists once.
 
 ### Build from source
 
-You need Xcode 16 or its Command Line Tools (Swift 6).
+Requires macOS 13 or later and Xcode 16 or later (Swift 6). The Command Line Tools
+are enough.
 
 ```sh
 git clone https://github.com/mralifakbar/seamline.git
 cd seamline
-./scripts/build-app.sh                 # builds build/Seamline.app (Apple silicon + Intel)
-cp -R build/Seamline.app /Applications/
+./scripts/build-app.sh && cp -R build/Seamline.app /Applications/
 ```
 
-To get the app onto another Mac, copy `build/Seamline.app` over (AirDrop, a shared folder, or `scp`) and put it in `/Applications` there. A build you copy yourself doesn't get the quarantine flag, so there is no Gatekeeper prompt.
+`./scripts/build-app.sh --zip` builds what releases ship: an arm64 + x86_64 app and a
+zip. Local builds use the first `Apple Development` or `Developer ID Application`
+certificate in your keychain, or ad-hoc if there is none. Set
+`SEAMLINE_SIGN_IDENTITY="Apple Development: …"` to choose one. Sign with a real
+certificate if you can: an ad-hoc build loses its permissions on every rebuild. With
+a `Developer ID Application` certificate, `scripts/notarize.sh build/Seamline.app`
+notarizes the result the way releases are.
 
-> [!TIP]
-> **Sign with your own certificate** if you have one, so the permissions survive rebuilds. The script uses the first `Apple Development` or `Developer ID Application` certificate in your keychain and lists them if there are several. Choose one with:
->
-> ```sh
-> SEAMLINE_SIGN_IDENTITY="Apple Development: Your Name (TEAMID)" ./scripts/build-app.sh
-> ```
+To get a build onto another Mac, copy `build/Seamline.app` over (AirDrop, a shared
+folder or `scp`) and put it in `/Applications` there.
 
 ## Set up
 
-Use one Mac as the **host**: the one with the keyboard and mouse you want to share. Every other Mac is a **guest**. Setup takes about a minute.
+Use one Mac as the **host**: the one with the keyboard and mouse you want to share.
+Every other Mac is a **guest**. Setup takes about a minute.
 
 ### 1. Choose a role on each Mac
 
-Open Seamline. On the Mac with the keyboard and mouse, choose **This Mac**. On every other Mac, choose **Another Mac**.
+Open Seamline. On the Mac with the keyboard and mouse, choose **This Mac**. On every
+other Mac, choose **Another Mac**.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/1-choose-role-dark.png">
@@ -72,7 +87,9 @@ Open Seamline. On the Mac with the keyboard and mouse, choose **This Mac**. On e
 
 ### 2. Allow the permissions
 
-macOS asks before any app can read input or control the pointer. Select **Allow…** next to each permission, switch Seamline on in System Settings, then come back. The page updates by itself.
+macOS asks before any app can read input or control the pointer. Select **Allow…**
+next to each permission, switch Seamline on in System Settings, then come back. The
+page updates by itself.
 
 | Permission | Host | Guest | Why |
 | --- | :---: | :---: | --- |
@@ -89,7 +106,9 @@ Then select **Find Nearby Macs** on the host, or **Make This Mac Visible** on a 
 
 ### 3. Pair
 
-On the host, the guest appears under **Nearby**. Select **Pair…** next to it. Both Macs then show the same 6-digit code. If the codes match, select **Pair** on the host and **Allow** on the guest.
+On the host, the guest appears under **Nearby**. Select **Pair…** next to it. Both
+Macs then show the same 6-digit code. If the codes match, select **Pair** on the host
+and **Allow** on the guest.
 
 <p>
 <picture>
@@ -102,11 +121,14 @@ On the host, the guest appears under **Nearby**. Select **Pair…** next to it. 
 </picture>
 </p>
 
-You pair only once. After that, the two Macs reconnect by themselves whenever both are running Seamline, including after sleep.
+You pair only once. After that, the two Macs reconnect by themselves whenever both
+are running Seamline, including after sleep.
 
 ### 4. Arrange the Macs to match your desk
 
-The guest appears next to the host in the arrangement. Drag each Mac to the side where it sits on your desk. You can also select a Mac and move it with the arrow keys. The blue bar marks the edge the pointer crosses.
+The guest appears next to the host in the arrangement. Drag each Mac to the side
+where it sits on your desk, or select it and use the arrow keys. The blue bar marks
+the edge the pointer crosses.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/4-arrangement-dark.png">
@@ -115,13 +137,17 @@ The guest appears next to the host in the arrangement. Drag each Mac to the side
 
 That's it. Push the pointer past that edge and it moves to the other Mac.
 
-## Daily use
+## Usage
 
-- **Move between Macs.** Push the pointer past the shared edge. A little resistance stops accidental switches. Change it under **Settings › Edge resistance**. Screen corners never switch, so Hot Corners keep working.
+- **Move between Macs.** Push the pointer past the shared edge. A little resistance
+  stops accidental switches; change it under **Settings › Edge resistance**. Screen
+  corners never switch, so Hot Corners keep working.
 - **Come back from anywhere.** Press <kbd>⌃</kbd> <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>Esc</kbd>.
-- **Copy and paste across Macs.** Copy on one Mac, move the pointer over, and paste. The clipboard travels when the pointer crosses, and only if it changed.
+- **Copy and paste across Macs.** Copy on one Mac, move the pointer over, and paste.
+  The clipboard travels when the pointer crosses, and only if it changed.
 - **Pause sharing.** Use the **Sharing** switch in the window or the menu bar.
-- **See the connection.** The menu bar shows each Mac with its measured round trip, for example `6 ms, Wi-Fi`.
+- **See the connection.** The menu bar shows each Mac with its measured round trip,
+  for example `6 ms, Wi-Fi`.
 
 <p>
 <picture>
@@ -145,7 +171,10 @@ On a guest, the window shows whether it is free or in use:
 
 ### Macs on different networks
 
-If the guest is on another network, for example reachable only over Tailscale, Bonjour can't see it. On the host, select **Connect by Address…** and enter the address shown in the guest's window, such as `100.101.102.103` or `macbook.tailnet.ts.net`. Seamline remembers the address and reconnects by itself.
+If the guest is on another network, for example reachable only over Tailscale,
+Bonjour can't see it. On the host, select **Connect by Address…** and enter the
+address shown in the guest's window, such as `100.101.102.103` or
+`macbook.tailnet.ts.net`. Seamline remembers the address and reconnects by itself.
 
 ## Troubleshooting
 
@@ -153,41 +182,28 @@ If the guest is on another network, for example reachable only over Tailscale, B
 | --- | --- |
 | Seamline isn't in the **Input Monitoring** or **Accessibility** list | Select **Allow…** in Seamline's window, which adds it to the list. Or select **+** under the list in System Settings and choose Seamline from Applications. |
 | The host keeps saying "Looking for Macs" | Check **System Settings › Privacy & Security › Local Network** on both Macs and switch Seamline on. Make sure the guest chose **Another Mac** and finished its setup. Both Macs must be on the same network, otherwise use **Connect by Address…**. |
-| Permissions stopped working after a rebuild | The build was signed ad-hoc, so macOS treats it as a new app. Switch Seamline off and on again in both lists, or [sign with a certificate](#install). |
+| Permissions stopped working after an update or rebuild | The app's signature changed, so macOS treats it as a new app. Switch Seamline off and on again in both lists. Releases from 0.1.1 on, and builds signed with a certificate, keep them. |
 | Typing stays on the host while the pointer is on a guest | A password field or a secure terminal has turned on Secure Input, which hides keystrokes from every app. Seamline shows a banner naming the app. Leave that field and typing goes across again. |
 | The pointer feels slow | The menu bar shows the measured round trip. Over Wi-Fi expect 5 to 10 ms. Wired Ethernet on one Mac removes one wireless hop. |
 
-## How it works
-
-| Part | Approach |
-| --- | --- |
-| Discovery | Bonjour (`_seamline._tcp`) over Wi-Fi, Ethernet and peer-to-peer Wi-Fi. No IP addresses to type. |
-| Transport | Two encrypted paths on one port. UDP carries pointer motion (newest position wins) and a fast copy of every key, click and scroll. TCP carries a reliable copy of the same events, plus pairing and the clipboard. The receiver takes whichever copy lands first, exactly once and in order, so a lost Wi-Fi frame never stalls typing behind a TCP retransmit. Both use the Wi-Fi voice service class. |
-| Loss repair | Every datagram also carries the events from the last 150 ms, so the next packet a few milliseconds later repairs a lost one. Clicks carry their own position, so a click never lands where the pointer used to be. |
-| Radio warm-up | While the pointer is on another Mac, or heading toward one, a small probe goes out every 20 ms. It keeps both radios out of power save and measures the round trip shown next to each Mac. |
-| Other networks | Connect by address to a Mac on another network, such as over Tailscale. The address is remembered and reconnects automatically. Peer-to-peer Wi-Fi is the last resort, because it time-shares the radio. |
-| Pairing | Curve25519 commit-then-reveal handshake. Both Macs derive a 6-digit code from the session transcript. Because of the commitment, a man in the middle gets one guess in a million per attempt. |
-| Encryption | ChaCha20-Poly1305 on every frame, with counter nonces per direction. Paired keys are pinned, so later sessions are authenticated without any prompt. |
-| Pointer | The host taps input on a dedicated real-time thread, freezes its own cursor, and keeps a virtual cursor in the other Mac's display space using sub-pixel deltas. Edges are detected per display, so L-shaped multi-monitor setups have no dead zones. |
-| Pointer rate | A leading-edge throttle at 250 Hz: the first movement leaves immediately, and a 1000 Hz mouse sends its newest position every 4 ms instead of flooding Wi-Fi airtime. If UDP is blocked, motion falls back to TCP. |
-| Clipboard | Read only at the moment the pointer crosses, and only if it changed. No polling. Compressed with LZFSE when that helps, and sent as 60 KB slices on a bulk lane that never delays keystrokes. |
-| Keyboard | Key codes are the same on every Mac, so keys travel as raw virtual key codes with modifier flags, autorepeat and keyboard type. Media and brightness keys are forwarded too. |
-| Scrolling | Pixel deltas, scroll phase and momentum phase are forwarded, so trackpad scrolling and rubber-banding feel native on the other Mac. |
-
 ## Measured
 
-Mac mini to MacBook Pro, both on 5 GHz Wi-Fi through one access point. 20 s at 125 Hz motion plus 20 events per second:
+Mac mini to MacBook Pro, both on 5 GHz Wi-Fi through one access point. 20 s at
+125 Hz motion plus 20 events per second:
 
 | Path | Round trip p50 | p90 | p99 | Motion packets lost |
 | --- | --- | --- | --- | --- |
 | Same network | 6.4 to 6.6 ms | 8.8 to 11.6 ms | 19.8 to 34.7 ms | 0 of 1,780 |
 | Tailscale | 7.6 ms | 10.0 ms | 23.3 ms | 0 of 1,820 |
 
-Plain `ping` on the same link averaged 7.8 ms, so Seamline adds no measurable overhead. The floor is the two Wi-Fi hops. Wired Ethernet on one side removes one of them.
+Plain `ping` on the same link averaged 7.8 ms, so Seamline adds no measurable
+overhead. The floor is the two Wi-Fi hops. Wired Ethernet on one side removes one of
+them.
 
 ### Tested on real hardware
 
-Last end-to-end run: 2 November 2026, a Mac mini (M4, macOS 26.6) as host with two displays, and a MacBook Pro (2018, Intel, macOS 15.8) as guest, on the same Wi-Fi.
+Last end-to-end run: 2 November 2026, a Mac mini (M4, macOS 26.6) as host with two
+displays, and a MacBook Pro (2018, Intel, macOS 15.8) as guest, on the same Wi-Fi.
 
 | Check | Result |
 | --- | --- |
@@ -200,57 +216,80 @@ Last end-to-end run: 2 November 2026, a Mac mini (M4, macOS 26.6) as host with t
 | Both Macs reconnect by themselves after Seamline restarts, without pairing again | ✓ |
 | Round trip shown in the app | 7 to 25 ms over Wi-Fi |
 
+## How it works
+
+```mermaid
+flowchart LR
+    T[Event tap<br/>host, real-time thread] --> E[HostEngine<br/>virtual cursor, edges]
+    E -- "UDP: motion + fast copy<br/>TCP: reliable copy,<br/>pairing, clipboard" --> G[GuestSession]
+    G --> I[InputInjector<br/>pointer, clicks, keys, scroll]
+    B[Bonjour<br/>_seamline._tcp] -. finds .-> E
+```
+
+- **Discovery** (`SeamlineCore/PeerConnection.swift`). Bonjour (`_seamline._tcp`)
+  over Wi-Fi, Ethernet and peer-to-peer Wi-Fi, so there are no IP addresses to type.
+  Macs on another network, such as over Tailscale, connect by address, which is
+  remembered. Peer-to-peer Wi-Fi is the last resort, because it time-shares the radio.
+- **Transport** (`PeerConnection.swift`, `Reliability.swift`). Two encrypted paths on
+  one port, both in the Wi-Fi voice service class. UDP carries pointer motion (newest
+  position wins) and a fast copy of every key, click and scroll. TCP carries a
+  reliable copy of the same events, plus pairing and the clipboard. The receiver takes
+  whichever copy lands first, exactly once and in order, so a lost Wi-Fi frame never
+  stalls typing behind a TCP retransmit. Every datagram also repeats the last 150 ms
+  of events, so the next packet repairs a lost one. While the pointer is on another
+  Mac, or heading toward one, a small probe every 20 ms keeps both radios out of power
+  save and measures the round trip.
+- **Pairing and encryption** (`SeamlineCore/Handshake.swift`). A Curve25519
+  commit-then-reveal handshake. Both Macs derive the 6-digit code from the session
+  transcript, so a man in the middle gets one guess in a million per attempt. Every
+  frame is sealed with ChaCha20-Poly1305 and counter nonces per direction. Paired keys
+  are pinned, so later sessions need no prompt.
+- **Pointer** (`Platform/EventTap.swift`, `Engine/HostEngine.swift`). The host taps
+  input on a dedicated real-time thread, freezes its own cursor, and keeps a virtual
+  cursor in the other Mac's display space with sub-pixel deltas. Edges are detected
+  per display, so L-shaped multi-monitor setups have no dead zones. Motion leaves at
+  most every 4 ms (250 Hz), the first movement immediately, and falls back to TCP if
+  UDP is blocked. Clicks carry their own position.
+- **Keyboard and scrolling** (`Platform/InputInjector.swift`). Key codes are the same
+  on every Mac, so keys travel as raw virtual key codes with modifier flags,
+  autorepeat and keyboard type, media and brightness keys included. Pixel deltas and
+  scroll and momentum phases are forwarded, so trackpad scrolling feels native.
+- **Clipboard** (`SeamlineCore/Clipboard.swift`). Read only when the pointer crosses,
+  and only if it changed. Compressed with LZFSE when that helps, and sent in 60 KB
+  slices on a bulk lane that never delays keystrokes.
+
+## Privacy
+
+No account and no analytics. Seamline only talks to the Macs you pair, and every
+frame between them is encrypted. The clipboard is read only when the pointer crosses
+to another Mac. This Mac's identity and the Macs it has paired with stay in
+`~/Library/Application Support/Seamline`, readable only by you.
+
 ## Development
 
-```
-Sources/SeamlineCore   Wire format, handshake, encrypted channel, geometry, layout, Bonjour (unit tested)
-Sources/Seamline       Event tap, input injection, cursor control, sessions, SwiftUI interface
-Tests                  swift test
-scripts                build-app.sh (add --zip for a release zip), make-icon.swift (draws the app icon)
-docs/images            README screenshots
-.github/workflows      CI on every push, and a release build for every v* tag
-```
-
 ```sh
-swift test                             # protocol, crypto, geometry, discovery and a real TCP loopback
-swift build                            # debug build at .build/debug/Seamline
+swift build                # debug build
+swift test                 # unit tests
+./scripts/build-app.sh && open build/Seamline.app
 ```
 
-Debug builds read a few environment variables:
-
-| Variable | Effect |
-| --- | --- |
-| `SEAMLINE_SNAPSHOT_DIR=dir SEAMLINE_SCENARIO=host` | Shows a screen with sample data, saves it as PNG to `dir`, and quits. Scenarios: `role`, `permissions`, `host`, `host-remote`, `host-empty`, `pairing-host`, `guest`, `guest-controlled`, `pairing-guest`. Add `SEAMLINE_DARK=1` for dark mode. |
-| `SEAMLINE_NAME="Mac Studio"` | Uses this name instead of the Mac's real one, so screenshots don't show it. |
-| `SEAMLINE_HOME=dir` | Keeps the identity and paired Macs in `dir` instead of Application Support. |
-| `SEAMLINE_AUTOPAIR=1` | Accepts every pairing prompt and logs each state change, for a two-machine test without clicking. |
-| `SEAMLINE_BENCH=20` | After pairing, drives the link for 20 seconds and prints latency percentiles. |
-| `SEAMLINE_CONNECT=address` | Connects to that address on launch. |
-
-The README screenshots come from the snapshot mode:
-
-```sh
-SEAMLINE_NAME="Mac Studio" SEAMLINE_SNAPSHOT_DIR=/tmp/shots SEAMLINE_SCENARIO=host .build/debug/Seamline
-```
-
-### Releasing
-
-Add the version to [CHANGELOG.md](CHANGELOG.md), then push a tag:
-
-```sh
-git tag v0.1.0 && git push origin v0.1.0
-```
-
-GitHub Actions tests, builds the universal app, and publishes `Seamline-0.1.0.zip` with its SHA-256 on the Releases page. The release notes come from the changelog.
-
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). To report a security problem, see [SECURITY.md](SECURITY.md).
+[CONTRIBUTING.md](CONTRIBUTING.md) lists the development switches, including the
+snapshot mode that renders the README screenshots and the two-Mac pairing and
+benchmark modes.
 
 ## Known limits
 
 - Mac to Mac only. Windows and Linux are not supported.
-- Files are not transferred. Copy and paste covers text, rich text, HTML, images, PDFs and URLs.
+- Files are not transferred. Copy and paste covers text, rich text, HTML, images,
+  PDFs and URLs.
 - The interface is in English only.
+
+## Contributing
+
+Bug reports from real multi-Mac setups, fixes and pull requests are welcome. Start
+with [CONTRIBUTING.md](CONTRIBUTING.md). To report a security issue, follow
+[SECURITY.md](SECURITY.md) instead of opening an issue.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+[MIT](LICENSE) © Alif Akbar Kartadinata

@@ -28,6 +28,8 @@ Tests/                   swift test: protocol, crypto, geometry, discovery and a
 scripts/build-app.sh     builds, signs and packages the .app (add --zip for a release zip)
 scripts/make-icon.swift  draws the app icon
 scripts/notarize.sh      notarizes and staples a Developer ID build
+scripts/ci.sh            every check, run locally (there's no hosted CI)
+scripts/release.sh       signs, notarizes and publishes a release from this Mac
 docs/images/             README screenshots
 ```
 
@@ -64,7 +66,8 @@ Open an issue with:
 ## Pull requests
 
 - Keep each PR focused on one thing, and describe what changed and how you tested it.
-- `swift test` must pass. CI runs it on every PR, along with a universal release build.
+- `./scripts/ci.sh` must pass: unit tests, a universal build and a smoke test. There's
+  no hosted CI, so run it on your Mac before opening the PR.
 - Try the change on two real Macs if it touches input, discovery or the connection.
   Unit tests cover the protocol, but not the event tap or the injector.
 - If the change affects what a screen looks like, regenerate the README screenshots
@@ -75,14 +78,19 @@ Open an issue with:
   never wait on the main thread.
 - Interface text is short, in plain English, and names the next step when something
   is wrong. Debug-only helpers go behind `#if DEBUG`.
+- Run `./scripts/ci.sh` before opening a PR. There's no hosted CI.
 - Update `CHANGELOG.md` under **Unreleased**.
 
 ## Releasing (maintainers)
 
 1. Move the **Unreleased** notes in `CHANGELOG.md` under a new version heading.
-2. Tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
-3. The release workflow builds the universal app, signs it with the Developer ID,
-   notarizes it, zips it and publishes a GitHub release with the changelog section as
-   notes.
+2. Commit, then run `./scripts/release.sh 0.2.0` on your Mac. There is no hosted CI:
+   the script checks everything first, then runs the tests, builds the universal app
+   signed with the Developer ID, notarizes and staples it, pushes `main` and the
+   `v0.2.0` tag, and publishes the GitHub release with the zip, its SHA-256 and the
+   changelog section as notes.
+3. Once per Mac: the Developer ID Application certificate in the keychain, notarization
+   credentials saved with `xcrun notarytool store-credentials notary …` (see the top of
+   `scripts/notarize.sh`), and `gh auth login`.
 
 By contributing, you agree that your work is released under the [MIT License](LICENSE).

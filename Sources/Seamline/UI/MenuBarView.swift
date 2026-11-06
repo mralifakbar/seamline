@@ -70,16 +70,46 @@ struct MenuBarView: View {
                     openWindow(id: "main")
                     NSApp.activate(ignoringOtherApps: true)
                 }
-                MenuRow(title: "Settings…", shortcut: "⌘,") {
-                    NSApp.activate(ignoringOtherApps: true)
-                    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-                }
+                SettingsRow()
                 MenuRow(title: "Quit Seamline", shortcut: "⌘Q") { NSApp.terminate(nil) }
                     .keyboardShortcut("q")
             }
             .padding(5)
         }
         .frame(width: 290)
+    }
+}
+
+/// Opens the Settings scene. Since macOS 14 the old `showSettingsWindow:` action does nothing,
+/// so newer systems go through `openSettings`, then bring the window forward: a menu bar app
+/// isn't frontmost, and the window would otherwise open behind other apps.
+private struct SettingsRow: View {
+    var body: some View {
+        if #available(macOS 14, *) {
+            Modern()
+        } else {
+            MenuRow(title: "Settings…", shortcut: "⌘,") {
+                NSApp.activate(ignoringOtherApps: true)
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            }
+        }
+    }
+
+    @available(macOS 14, *)
+    private struct Modern: View {
+        @Environment(\.openSettings) private var openSettings
+
+        var body: some View {
+            MenuRow(title: "Settings…", shortcut: "⌘,") {
+                NSApp.activate(ignoringOtherApps: true)
+                openSettings()
+                DispatchQueue.main.async {
+                    NSApp.activate(ignoringOtherApps: true)
+                    NSApp.windows.first { $0.identifier?.rawValue == "com_apple_SwiftUI_Settings_window" }?.makeKeyAndOrderFront(nil)
+                }
+            }
+            .keyboardShortcut(",")
+        }
     }
 }
 

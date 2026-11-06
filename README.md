@@ -9,7 +9,6 @@
 A native macOS app that sends your pointer, keystrokes and clipboard to the next Mac
 when you push past the edge of the screen. No server, no account, no telemetry.
 
-[![CI](https://github.com/mralifakbar/seamline/actions/workflows/ci.yml/badge.svg)](https://github.com/mralifakbar/seamline/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/mralifakbar/seamline?sort=semver)](https://github.com/mralifakbar/seamline/releases/latest)
 ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)
 ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)

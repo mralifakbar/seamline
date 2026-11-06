@@ -54,7 +54,8 @@ plutil -replace CFBundleVersion -string "$BUILD_NUMBER" "$APP/Contents/Info.plis
 
 IDENTITY="${SEAMLINE_SIGN_IDENTITY:-}"
 if [[ -z "$IDENTITY" ]]; then
-  IDENTITIES=("${(@f)$(security find-identity -p codesigning -v 2>/dev/null | awk -F'"' '/Developer ID Application|Apple Development/ {print $2}')}")
+  # Developer ID first: it's the one meant for apps shared outside the App Store.
+  IDENTITIES=("${(@f)$(security find-identity -p codesigning -v 2>/dev/null | awk -F'"' '/Developer ID Application/ {print $2}'; security find-identity -p codesigning -v 2>/dev/null | awk -F'"' '/Apple Development/ {print $2}')}")
   IDENTITIES=(${IDENTITIES:#})
   if (( ${#IDENTITIES} > 0 )); then
     IDENTITY=$IDENTITIES[1]

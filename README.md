@@ -151,7 +151,7 @@ That's it. Push the pointer past that edge and it moves to the other Mac.
 <p>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/menu-bar-dark.png">
-  <img src="docs/images/menu-bar.png" width="290" alt="Menu bar panel: pointer on this Mac, MacBook Air at 6 ms over Wi-Fi, Mac mini not available, a Share Keyboard and Mouse switch, Open Seamline, Settings, Quit.">
+  <img src="docs/images/menu-bar.png" width="320" alt="Menu bar panel: pointer on this Mac, MacBook Air at 6 ms over Wi-Fi, Mac mini not available, a Share Keyboard and Mouse switch, Open Seamline, Settings, Quit.">
 </picture>
 </p>
 

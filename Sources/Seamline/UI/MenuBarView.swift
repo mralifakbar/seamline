@@ -5,7 +5,7 @@ struct MenuBarView: View {
     @Environment(\.openWindow) private var openWindow
 
     private var status: String {
-        guard model.isRunning else { return "Finish setting up in the Seamline window." }
+        guard model.isRunning else { return "Not set up yet" }
         if model.role == .guest {
             return model.controller.map { "Controlled by \($0)" } ?? "Ready to be controlled"
         }
@@ -13,55 +13,40 @@ struct MenuBarView: View {
         return model.focusName.map { "Pointer on \($0)" } ?? "Pointer on this Mac"
     }
 
+    private var statusColor: Color {
+        guard model.isRunning else { return .orange }
+        if model.role == .host, model.paused { return .gray }
+        return .green
+    }
+
     private var paired: [Machine] { model.machines.filter(\.isPaired) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Seamline").font(.headline)
-                Text(status).foregroundStyle(.subdued)
-            }
-            .padding(.horizontal, 14)
-            .padding(.top, 12)
-            .padding(.bottom, 10)
-
-            if let app = model.secureInputApp {
-                Label {
-                    Text("\(app) is keeping typing on this Mac.")
-                } icon: {
-                    Image(systemName: "lock.fill").foregroundStyle(.orange)
-                }
-                .font(.callout)
-                .padding(.horizontal, 14)
-                .padding(.bottom, 10)
-            }
+        VStack(alignment: .leading, spacing: 12) {
+            header
+            cards
 
             if model.isRunning, !paired.isEmpty {
                 Divider()
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Paired Macs").font(.caption.weight(.semibold)).foregroundStyle(.subdued)
                     ForEach(paired) { machine in
-                        HStack(spacing: 8) {
+                        HStack(spacing: 10) {
                             Image(systemName: machine.kind.symbol)
-                                .foregroundStyle(.subdued)
-                                .frame(width: 20)
+                                .foregroundStyle(machine.status == .connected ? Color.accentColor : Color.secondary)
+                                .frame(width: 18)
+                                .accessibilityHidden(true)
                             Text(machine.name).lineLimit(1)
-                            Spacer()
+                            Spacer(minLength: 8)
+                            StatusDot(color: machine.status.dotColor)
                             Text(machine.linkDetail)
-                                .font(.callout)
+                                .font(.caption)
                                 .foregroundStyle(.subdued)
                         }
+                        .frame(minHeight: 22)
+                        .accessibilityElement(children: .combine)
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-            }
-
-            if model.isRunning, model.role == .host {
-                Divider()
-                Toggle("Share Keyboard and Mouse", isOn: Binding(get: { !model.paused }, set: { model.paused = !$0 }))
-                    .toggleStyle(.switch)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
             }
 
             Divider()
@@ -74,9 +59,44 @@ struct MenuBarView: View {
                 MenuRow(title: "Quit Seamline", shortcut: "⌘Q") { NSApp.terminate(nil) }
                     .keyboardShortcut("q")
             }
-            .padding(5)
+            // The rows' hover highlight reaches a little past the text, like a menu's.
+            .padding(.horizontal, -6)
         }
-        .frame(width: 290)
+        .padding(14)
+        .frame(width: 320)
+    }
+
+    private var header: some View {
+        HStack(spacing: 10) {
+            AppIconImage(size: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Seamline").font(.headline)
+                HStack(spacing: 6) {
+                    StatusDot(color: statusColor)
+                    Text(status).font(.caption).foregroundStyle(.subdued)
+                }
+            }
+            Spacer()
+            if model.isRunning, model.role == .host {
+                Toggle("Share Keyboard and Mouse", isOn: Binding(get: { !model.paused }, set: { model.paused = !$0 }))
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .help("Share Keyboard and Mouse")
+            }
+        }
+    }
+
+    @ViewBuilder private var cards: some View {
+        if !model.isRunning {
+            ActionCard(symbol: "sparkles", tint: .orange, text: "Finish setting up in the Seamline window.",
+                       button: "Continue Setup") {
+                openWindow(id: "main")
+                NSApp.activate(ignoringOtherApps: true)
+            }
+        }
+        if let app = model.secureInputApp {
+            ActionCard(symbol: "lock.fill", tint: .orange, text: "\(app) is keeping typing on this Mac.")
+        }
     }
 }
 
@@ -113,7 +133,7 @@ private struct SettingsRow: View {
     }
 }
 
-/// A plain row that highlights on hover like a native menu item.
+/// A plain row that highlights on hover like a native menu item. Shortcuts show as keycaps.
 private struct MenuRow: View {
     let title: String
     var shortcut: String?
@@ -126,10 +146,10 @@ private struct MenuRow: View {
                 Text(title)
                 Spacer()
                 if let shortcut {
-                    Text(shortcut).foregroundStyle(.subdued)
+                    KeyCaps(text: shortcut)
                 }
             }
-            .padding(.horizontal, 9)
+            .padding(.horizontal, 6)
             .frame(height: 26)
             .contentShape(Rectangle())
             .background(RoundedRectangle(cornerRadius: 5).fill(hovering ? Color.primary.opacity(0.1) : .clear))

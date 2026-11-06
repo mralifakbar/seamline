@@ -30,6 +30,8 @@ enum Snapshot {
         let env = ProcessInfo.processInfo.environment
         guard let dir = env["SEAMLINE_SNAPSHOT_DIR"], let scenario = env["SEAMLINE_SCENARIO"] else { return }
         NSApp.appearance = NSAppearance(named: env["SEAMLINE_DARK"] == "1" ? .darkAqua : .aqua)
+        // A debug binary has no bundle icon; borrow the README's so the menu bar panel shows the real one.
+        if let icon = NSImage(contentsOfFile: "docs/images/icon.png") { NSApp.applicationIconImage = icon }
         apply(scenario, to: model)
         NSApp.activate(ignoringOtherApps: true)
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {

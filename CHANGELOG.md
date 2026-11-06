@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- A new look that matches Panefold: grouped settings on soft cards with a caption under each setting, a menu bar panel with the app icon, a status dot and the sharing switch in its header, step dots and a button bar during setup, and keycaps for shortcuts. Everything works as before.
+
 ## [0.1.1] - 2026-11-03
 
 ### Changed

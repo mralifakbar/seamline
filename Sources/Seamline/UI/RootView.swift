@@ -27,32 +27,6 @@ struct RootView: View {
     }
 }
 
-/// A full-width notice for problems that block the main task. Orange and red stay reserved for these.
-struct Banner: View {
-    enum Tone { case warning, error }
-
-    let tone: Tone
-    let symbol: String
-    let message: String
-    var action: (title: String, run: () -> Void)?
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Image(systemName: symbol)
-                .foregroundStyle(tone == .error ? Color.red : Color.orange)
-            Text(message)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 8)
-            if let action {
-                Button(action.title, action: action.run)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background((tone == .error ? Color.red : Color.orange).opacity(0.1))
-    }
-}
-
 extension Machine.Status {
     var label: String {
         switch self {
@@ -91,16 +65,5 @@ extension MachineKind {
         case .allInOne: return "desktopcomputer"
         case .desktop: return "display"
         }
-    }
-}
-
-extension ShapeStyle where Self == Color {
-    /// Secondary text at WCAG AA. The system secondary label measures about 3.9:1 on light gray surfaces.
-    static var subdued: Color {
-        Color(nsColor: NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(white: 1, alpha: 0.62)
-                : NSColor(white: 0, alpha: 0.64)
-        })
     }
 }

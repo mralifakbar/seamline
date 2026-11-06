@@ -10,13 +10,17 @@ struct HostView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 14) {
             banners
-            ArrangementCanvas()
-                .padding(16)
-            Divider()
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Arrangement").font(.headline).foregroundStyle(.subdued)
+                ArrangementCanvas()
+            }
             NearbyList()
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 20)
         .navigationTitle("Seamline")
         .navigationSubtitle(subtitle)
         .toolbar {
@@ -36,18 +40,18 @@ struct HostView: View {
 
     @ViewBuilder private var banners: some View {
         if model.discoveryProblem == .localNetworkDenied {
-            Banner(tone: .error, symbol: "wifi.exclamationmark",
-                   message: "Seamline can't see other Macs because Local Network access is off for it.",
-                   action: ("Open Privacy Settings", Permissions.openLocalNetworkSettings))
+            ActionCard(symbol: "wifi.exclamationmark", tint: .red,
+                       text: "Seamline can't see other Macs because Local Network access is off for it.",
+                       button: "Open Privacy Settings", action: Permissions.openLocalNetworkSettings)
         }
         if model.tapFailed {
-            Banner(tone: .error, symbol: "exclamationmark.triangle.fill",
-                   message: "Seamline couldn't start reading the keyboard and mouse. Check Accessibility and Input Monitoring.",
-                   action: ("Open Settings", Permissions.requestAccessibility))
+            ActionCard(symbol: "exclamationmark.triangle.fill", tint: .red,
+                       text: "Seamline couldn't start reading the keyboard and mouse. Check Accessibility and Input Monitoring.",
+                       button: "Open Settings", action: Permissions.requestAccessibility)
         }
         if let app = model.secureInputApp, let target = model.focusName {
-            Banner(tone: .warning, symbol: "lock.fill",
-                   message: "\(app) is protecting a password field on this Mac, so typing stays here instead of going to \(target). Close or leave that field to type on \(target).")
+            ActionCard(symbol: "lock.fill", tint: .orange,
+                       text: "\(app) is protecting a password field on this Mac, so typing stays here instead of going to \(target). Close or leave that field to type on \(target).")
         }
     }
 }
@@ -147,7 +151,7 @@ private struct ArrangementCanvas: View {
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.045)))
+        .background(SoftCard())
         .overlay(alignment: .bottom) {
             Text(model.layout.cells.count > 1
                  ? "Drag the Macs to match your desk. The pointer crosses where two Macs touch."
@@ -156,7 +160,7 @@ private struct ArrangementCanvas: View {
                 .foregroundStyle(.subdued)
                 .padding(.bottom, 14)
         }
-        .frame(minHeight: 280)
+        .frame(minHeight: 230)
     }
 
     // The crossing seam is Seamline's one accent: it marks exactly where the pointer moves between Macs.
@@ -257,27 +261,38 @@ private struct MachineTile: View {
 
     private var dimmed: Bool { machine.status == .offline || machine.status == .connecting }
 
+    /// White on the light card; a lifted gray on the dark one, where the control color reads as a hole.
+    private static let fill = Color(nsColor: NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(white: 1, alpha: 0.09)
+            : NSColor.controlBackgroundColor
+    })
+
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(nsColor: .controlBackgroundColor))
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Self.fill)
+            RoundedRectangle(cornerRadius: 10)
                 .strokeBorder(
-                    hasPointer ? Color.accentColor : Color(nsColor: .separatorColor),
+                    hasPointer ? Color.accentColor : Color.primary.opacity(0.1),
                     style: StrokeStyle(lineWidth: hasPointer ? 2 : 1, dash: machine.status == .offline ? [4, 3] : []))
             VStack(spacing: 4) {
                 Image(systemName: machine.kind.symbol)
                     .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(.subdued)
+                    .foregroundStyle(hasPointer ? Color.accentColor : Color.subdued)
                     .opacity(dimmed ? 0.5 : 1)
                 Text(machine.name)
-                    .font(.callout.weight(.medium))
+                    .font(.callout.weight(.semibold))
                     .lineLimit(1)
                     .truncationMode(.middle)
-                Text(isThisMac ? "This Mac" : machine.statusDetail)
-                    .font(.caption)
-                    .foregroundStyle(.subdued)
-                    .lineLimit(1)
+                // A narrow tile drops the latency rather than truncating the status.
+                ViewThatFits(in: .horizontal) {
+                    Text(isThisMac ? "This Mac" : machine.statusDetail)
+                    Text(isThisMac ? "This Mac" : machine.status.label)
+                }
+                .font(.caption)
+                .foregroundStyle(.subdued)
+                .lineLimit(1)
             }
             .padding(8)
         }
@@ -304,22 +319,13 @@ private struct NearbyList: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Nearby")
-                    .font(.headline)
-                Spacer()
-                Button("Connect by Address…") { addressSheet = true }
-                    .help("For a Mac on another network, for example over Tailscale")
-            }
-            .sheet(isPresented: $addressSheet) { AddressSheet() }
-
+        Section2(title: "Nearby") {
             if case .unavailable(let reason) = model.discoveryProblem {
-                Label("Can't search the network right now: \(reason)", systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.subdued)
+                SettingRow(symbol: "exclamationmark.triangle", symbolStyle: .orange,
+                           title: "Can't search the network right now", detail: reason)
             } else if nearby.isEmpty {
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    ProgressView().controlSize(.small)
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    ProgressView().controlSize(.small).frame(width: 22)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(model.machines.isEmpty
                              ? "Looking for Macs on this network. On the other Mac, open Seamline and choose “Another Mac”."
@@ -331,10 +337,12 @@ private struct NearbyList: View {
                         if searchingLong, model.machines.isEmpty {
                             HStack(spacing: 6) {
                                 Text("Still nothing? Local Network access may be off for Seamline.")
+                                    .font(.caption)
                                     .foregroundStyle(.subdued)
                                     .fixedSize(horizontal: false, vertical: true)
                                 Button("Open Privacy Settings", action: Permissions.openLocalNetworkSettings)
                                     .buttonStyle(.link)
+                                    .font(.caption)
                             }
                         }
                     }
@@ -345,28 +353,23 @@ private struct NearbyList: View {
                     searchingLong = true
                 }
             } else {
-                ForEach(nearby) { machine in
-                    HStack(spacing: 10) {
-                        Image(systemName: machine.kind.symbol)
-                            .foregroundStyle(.subdued)
-                            .frame(width: 22)
-                        Text(machine.name)
-                        Spacer()
+                ForEach(Array(nearby.enumerated()), id: \.element.id) { index, machine in
+                    if index > 0 { Divider().padding(.leading, 34) }
+                    SettingRow(symbol: machine.kind.symbol, title: machine.name, detail: machine.status.label) {
                         if machine.status == .nearby {
                             Button("Pair…") { model.pair(machine.id) }
                         } else {
                             ProgressView().controlSize(.small)
-                            Text(machine.status.label)
-                                .foregroundStyle(.subdued)
                         }
                     }
-                    .frame(minHeight: 28)
                 }
             }
+        } accessory: {
+            Button("Connect by Address…") { addressSheet = true }
+                .controlSize(.small)
+                .help("For a Mac on another network, for example over Tailscale")
+                .sheet(isPresented: $addressSheet) { AddressSheet() }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -380,7 +383,7 @@ private struct AddressSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Connect by Address")
-                .font(.title3.weight(.semibold))
+                .font(.title2.bold())
             Text("Use this when the other Mac is on a different network, for example over Tailscale. Its address is shown in Seamline on that Mac. Seamline remembers it and reconnects by itself.")
                 .foregroundStyle(.subdued)
                 .fixedSize(horizontal: false, vertical: true)
@@ -399,6 +402,7 @@ private struct AddressSheet: View {
                 Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button("Connect", action: connect)
+                    .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(address.trimmingCharacters(in: .whitespaces).isEmpty)
             }

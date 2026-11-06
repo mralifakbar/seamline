@@ -6,9 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-06
+
 ### Changed
 
 - A new look that matches Panefold: grouped settings on soft cards with a caption under each setting, a menu bar panel with the app icon, a status dot and the sharing switch in its header, step dots and a button bar during setup, and keycaps for shortcuts. Everything works as before.
+
+### Fixed
+
+- Settings… in the menu bar panel now opens the Settings window on macOS 14 and later.
 
 ## [0.1.1] - 2026-11-03
 
@@ -41,6 +47,7 @@ First public release.
 - The host explains where to look when no Mac shows up, because macOS can block Local Network access without an error.
 - The keyboard focus ring on the arrangement tiles hugs the tile instead of floating between Macs.
 
-[Unreleased]: https://github.com/mralifakbar/seamline/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/mralifakbar/seamline/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/mralifakbar/seamline/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/mralifakbar/seamline/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mralifakbar/seamline/releases/tag/v0.1.0
